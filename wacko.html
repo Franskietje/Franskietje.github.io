@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>franssiss</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			background: #000;
+			width: 100vw;
+			height: 100vh;
+			overflow: hidden;
+			position: relative;
+		}
+
+		/* ── Background video ─────────────────────────────────────────── */
+		#bgVideo {
+			display: none;
+			position: fixed;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			z-index: -2;
+		}
+
+		body.playing #bgVideo {
+			display: block;
+			animation: videoFrenzy 1.6s steps(4, jump-none) infinite;
+		}
+
+		@keyframes videoFrenzy {
+			0%   { filter: saturate(9)  hue-rotate(0deg)   contrast(2.2) brightness(1.1); transform: scale(1.04); }
+			25%  { filter: saturate(14) hue-rotate(90deg)  contrast(3.5) brightness(1.9) blur(1px); transform: scale(1.09) rotate(1.2deg); }
+			50%  { filter: saturate(7)  hue-rotate(200deg) contrast(2.8) brightness(0.7) invert(0.25); transform: scale(1.02) rotate(-0.8deg); }
+			75%  { filter: saturate(18) hue-rotate(300deg) contrast(4.5) brightness(1.4); transform: scale(1.12) rotate(0.6deg) skewX(1.5deg); }
+			100% { filter: saturate(9)  hue-rotate(360deg) contrast(2.2) brightness(1.1); transform: scale(1.04); }
+		}
+
+		/* ── Body-level colour churn when playing ─────────────────────── */
+		body.playing {
+			animation: bodyChurn 500ms steps(3, jump-none) infinite;
+		}
+
+		@keyframes bodyChurn {
+			0%   { filter: hue-rotate(0deg)   saturate(2); }
+			33%  { filter: hue-rotate(130deg)  saturate(3) contrast(1.4); }
+			66%  { filter: hue-rotate(260deg)  saturate(4) contrast(1.8) brightness(1.2); }
+			100% { filter: hue-rotate(360deg)  saturate(2); }
+		}
+
+		/* ── Scanline overlay ─────────────────────────────────────────── */
+		#scanlines {
+			display: none;
+			position: fixed;
+			inset: 0;
+			z-index: -1;
+			pointer-events: none;
+			background: repeating-linear-gradient(
+				0deg,
+				transparent 0px,
+				transparent 3px,
+				rgba(0,0,0,0.18) 4px
+			);
+			animation: scanJitter 80ms steps(2, jump-none) infinite;
+			mix-blend-mode: multiply;
+		}
+
+		body.playing #scanlines { display: block; }
+
+		@keyframes scanJitter {
+			0%   { transform: translateY(0); }
+			50%  { transform: translateY(4px); }
+			100% { transform: translateY(0); }
+		}
+
+		/* ── Stop button ─────────────────────────────────────────────── */
+		#stopBtn {
+			display: none;
+			position: fixed;
+			bottom: 32px;
+			left: 50%;
+			transform: translateX(-50%);
+			z-index: 100;
+			padding: 10px 28px;
+			font-family: "Inter", "Segoe UI", sans-serif;
+			font-size: 0.85rem;
+			font-weight: 300;
+			letter-spacing: 0.22em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.82);
+			background: rgba(0,0,0,0.55);
+			border: 1px solid rgba(255,255,255,0.28);
+			border-radius: 999px;
+			cursor: pointer;
+			backdrop-filter: blur(8px);
+			transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+		}
+
+		#stopBtn:hover {
+			color: #fff;
+			background: rgba(0,0,0,0.8);
+			border-color: rgba(255,255,255,0.55);
+		}
+
+		body.playing #stopBtn { display: block; }
+
+		.ghost {
+			position: absolute;
+			opacity: 0;
+			color: #fff;
+			pointer-events: none;
+			white-space: nowrap;
+			will-change: opacity, transform;
+		}
+
+		.ghost.text {
+			font-family: "Inter", "Segoe UI", sans-serif;
+			font-weight: 200;
+			letter-spacing: 0.14em;
+			pointer-events: auto;
+			cursor: pointer;
+		}
+
+		.ghost.text.pinned {
+			transition: opacity 1.4s ease-out;
+		}
+
+		.ghost.shape {
+			border-radius: 50%;
+			background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 72%);
+		}
+
+		@keyframes appear {
+			0%   { opacity: 0; transform: var(--tf-start); }
+			20%  { opacity: var(--peak-opacity); transform: var(--tf-mid); }
+			80%  { opacity: var(--peak-opacity); transform: var(--tf-mid); }
+			100% { opacity: 0; transform: var(--tf-end); }
+		}
+
+		/* ── Ghost elements ───────────────────────────────────────────── */
+		.ghost {
+			position: absolute;
+			opacity: 0;
+			color: #fff;
+			pointer-events: none;
+			white-space: nowrap;
+			will-change: opacity, transform;
+		}
+
+		.ghost.text {
+			font-family: "Inter", "Segoe UI", sans-serif;
+			font-weight: 200;
+			letter-spacing: 0.14em;
+			pointer-events: auto;
+			cursor: pointer;
+		}
+
+		.ghost.text.pinned {
+			transition: opacity 1.4s ease-out;
+		}
+
+		.ghost.shape {
+			border-radius: 50%;
+			background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 72%);
+		}
+
+		@keyframes appear {
+			0%   { opacity: 0; transform: var(--tf-start); }
+			20%  { opacity: var(--peak-opacity); transform: var(--tf-mid); }
+			80%  { opacity: var(--peak-opacity); transform: var(--tf-mid); }
+			100% { opacity: 0; transform: var(--tf-end); }
+		}
+	</style>
+</head>
+<body>
+	<video id="bgVideo" autoplay muted loop playsinline></video>
+	<div id="scanlines"></div>
+	<button id="stopBtn">stop</button>
+	<audio id="player"></audio>
+
+	<script>
+		// ─── Edit your words here ───────────────────────────────────────
+		const phrases = [
+        "wacko",
+        "birdsandbees",
+        "hey you",
+        "how is it possible",
+        "silence",
+        "letter to myself",
+        "so faithful and so sweet",
+        "somewhere i want to be",
+        "sweet thing"
+		];
+		// ─────────────────────────────────────────────────────────────────
+
+		// ─── Map each phrase to its audio file ────────────────────────
+		const audioMap = {
+			"wacko":                    "audio/wacko/wacko.m4a",
+			"birdsandbees":             "audio/wacko/birdsandbees.m4a",
+			"hey you":                  "audio/wacko/hey you.m4a",
+			"how is it possible":       "audio/wacko/how is it possible.m4a",
+			"silence":                  "audio/wacko/silence.m4a",
+			"letter to myself":         "audio/wacko/letter to myself.mp3",
+			"so faithful and so sweet": "audio/wacko/so faithful and so sweet.m4a",
+			"somewhere i want to be":   "audio/wacko/somewhere i want to be.m4a",
+			"sweet thing":              "audio/wacko/sweet thing.m4a",
+		};
+		// ─────────────────────────────────────────────────────────────────
+
+		const player  = document.getElementById("player");
+		const bgVideo = document.getElementById("bgVideo");
+		const stopBtn = document.getElementById("stopBtn");
+
+		let videoList = [];
+		fetch("videos.json")
+			.then(r => r.json())
+			.then(list => { videoList = list; })
+			.catch(() => {});
+
+		function loadRandomVideo() {
+			if (!videoList.length) return;
+			const src = videoList[Math.floor(Math.random() * videoList.length)];
+			bgVideo.src = src;
+			bgVideo.load();
+			bgVideo.play().catch(() => {});
+		}
+
+		function startPlayback(phrase) {
+			const file = audioMap[phrase];
+			if (!file) return;
+			// encode spaces / special chars in the path
+			const encoded = file.split("/").map((seg, i) => i === 0 ? seg : encodeURIComponent(seg)).join("/");
+			player.src = encoded;
+			player.play().catch(() => {});
+			loadRandomVideo();
+			document.body.classList.add("playing");
+		}
+
+		function stopPlayback() {
+			player.pause();
+			player.src = "";
+			bgVideo.pause();
+			bgVideo.src = "";
+			document.body.classList.remove("playing");
+		}
+
+		stopBtn.addEventListener("click", stopPlayback);
+		player.addEventListener("ended", stopPlayback);
+
+		const POOL_SIZE = 12;
+		const pool = [];
+
+		for (let i = 0; i < POOL_SIZE; i++) {
+			const el = document.createElement("div");
+			el.className = "ghost";
+			document.body.appendChild(el);
+			pool.push({ el, busy: false });
+		}
+
+		function rand(min, max) {
+			return Math.random() * (max - min) + min;
+		}
+
+		function spawn() {
+			const slot = pool.find(s => !s.busy);
+			if (!slot) return;
+
+			const el = slot.el;
+			slot.busy = true;
+
+			const isShape = Math.random() < 0.22;
+			const duration = rand(3200, 9000);
+			const peakOpacity = rand(0.04, 0.38).toFixed(3);
+
+			const x = rand(5, 90);
+			const y = rand(5, 90);
+
+			const dx = rand(-18, 18);
+			const dy = rand(-14, 14);
+			const startX = `translate(${-dx * 0.6}px, ${-dy * 0.6}px)`;
+			const midX   = `translate(0px, 0px)`;
+			const endX   = `translate(${dx}px, ${dy}px)`;
+
+			el.style.cssText = "";
+			el.style.left = `${x}vw`;
+			el.style.top  = `${y}vh`;
+
+			el.style.setProperty("--peak-opacity", peakOpacity);
+			el.style.setProperty("--tf-start", startX);
+			el.style.setProperty("--tf-mid",   midX);
+			el.style.setProperty("--tf-end",    endX);
+
+			if (isShape) {
+				el.className = "ghost shape";
+				const size = rand(80, 340);
+				el.style.width  = `${size}px`;
+				el.style.height = `${size}px`;
+			} else {
+				el.className = "ghost text";
+				const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+				el.textContent = phrase;
+				const size = rand(0.7, 2.8);
+				el.style.fontSize = `${size}rem`;
+			}
+
+			el.style.animation = `appear ${duration}ms ease-in-out forwards`;
+
+			const onEnd = () => {
+				el.style.animation = "";
+				el.style.opacity = "0";
+				el.classList.remove("pinned");
+				slot.busy = false;
+			};
+			el.addEventListener("animationend", onEnd, { once: true });
+
+			if (!isShape) {
+				el.onclick = () => {
+					const phrase = el.textContent.trim();
+					// Pin and fade the word
+					el.removeEventListener("animationend", onEnd);
+					el.style.animation = "none";
+					el.style.opacity = "1";
+					el.classList.add("pinned");
+					requestAnimationFrame(() => {
+						requestAnimationFrame(() => {
+							el.style.opacity = "0";
+							el.addEventListener("transitionend", () => {
+								el.classList.remove("pinned");
+								el.onclick = null;
+								slot.busy = false;
+							}, { once: true });
+						});
+					});
+					// Play corresponding song + trigger visuals
+					startPlayback(phrase);
+				};
+			}
+		}
+
+		function tick() {
+			spawn();
+			setTimeout(tick, rand(280, 1100));
+		}
+
+		tick();
+	</script>
+</body>
+</html>

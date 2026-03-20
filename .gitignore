@@ -1,0 +1,5 @@
+# Keep large source video files local; commit only web-optimized outputs.
+video/*.MOV
+video/*.MP4
+video/*.mov
+video/*.mp4
