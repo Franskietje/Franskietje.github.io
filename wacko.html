@@ -32,6 +32,10 @@
 
 		body.playing #bgVideo {
 			display: block;
+		}
+
+		/* ── Wild vibe ── frenzy ─────────────────────────────────────── */
+		body.playing.vibe-wild #bgVideo {
 			animation: videoFrenzy 1.6s steps(4, jump-none) infinite;
 		}
 
@@ -43,8 +47,31 @@
 			100% { filter: saturate(9)  hue-rotate(360deg) contrast(2.2) brightness(1.1); transform: scale(1.04); }
 		}
 
+		/* ── Soft vibe ── dreamy breathing ───────────────────────────── */
+		body.playing.vibe-soft #bgVideo {
+			animation: videoDream 9s ease-in-out infinite;
+		}
+
+		@keyframes videoDream {
+			0%   { filter: saturate(1.2) brightness(0.80) sepia(0.28) contrast(0.95); transform: scale(1.00); }
+			40%  { filter: saturate(1.7) brightness(0.96) sepia(0.08) contrast(1.06); transform: scale(1.024) translateY(-6px); }
+			100% { filter: saturate(1.2) brightness(0.80) sepia(0.28) contrast(0.95); transform: scale(1.00); }
+		}
+
+		/* ── Medium vibe ── warm pulse ────────────────────────────────── */
+		body.playing.vibe-medium #bgVideo {
+			animation: videoPulse 3.2s ease-in-out infinite;
+		}
+
+		@keyframes videoPulse {
+			0%   { filter: saturate(2.2) hue-rotate(0deg)   contrast(1.4) brightness(0.95); transform: scale(1.00); }
+			30%  { filter: saturate(4.5) hue-rotate(45deg)  contrast(1.9) brightness(1.15); transform: scale(1.04) rotate(0.4deg); }
+			60%  { filter: saturate(3.0) hue-rotate(90deg)  contrast(2.2) brightness(0.85); transform: scale(1.06) rotate(-0.3deg); }
+			100% { filter: saturate(2.2) hue-rotate(0deg)   contrast(1.4) brightness(0.95); transform: scale(1.00); }
+		}
+
 		/* ── Body-level colour churn when playing ─────────────────────── */
-		body.playing {
+		body.playing.vibe-wild {
 			animation: bodyChurn 500ms steps(3, jump-none) infinite;
 		}
 
@@ -53,6 +80,26 @@
 			33%  { filter: hue-rotate(130deg)  saturate(3) contrast(1.4); }
 			66%  { filter: hue-rotate(260deg)  saturate(4) contrast(1.8) brightness(1.2); }
 			100% { filter: hue-rotate(360deg)  saturate(2); }
+		}
+
+		body.playing.vibe-medium {
+			animation: bodyPulse 3s ease-in-out infinite;
+		}
+
+		@keyframes bodyPulse {
+			0%   { filter: saturate(1.4) hue-rotate(0deg)   brightness(0.95); }
+			50%  { filter: saturate(2.4) hue-rotate(60deg)  brightness(1.08) contrast(1.2); }
+			100% { filter: saturate(1.4) hue-rotate(0deg)   brightness(0.95); }
+		}
+
+		body.playing.vibe-soft {
+			animation: bodyBreath 7s ease-in-out infinite;
+		}
+
+		@keyframes bodyBreath {
+			0%   { filter: brightness(0.90) saturate(0.82) hue-rotate(0deg); }
+			50%  { filter: brightness(1.06) saturate(1.12) hue-rotate(24deg); }
+			100% { filter: brightness(0.90) saturate(0.82) hue-rotate(0deg); }
 		}
 
 		/* ── Scanline overlay ─────────────────────────────────────────── */
@@ -72,7 +119,13 @@
 			mix-blend-mode: multiply;
 		}
 
-		body.playing #scanlines { display: block; }
+		body.playing.vibe-wild #scanlines,
+		body.playing.vibe-medium #scanlines { display: block; }
+
+		body.playing.vibe-medium #scanlines {
+			animation: scanJitter 200ms steps(2, jump-none) infinite;
+			opacity: 0.5;
+		}
 
 		@keyframes scanJitter {
 			0%   { transform: translateY(0); }
@@ -186,6 +239,13 @@
 			letter-spacing: 0.14em;
 			pointer-events: auto;
 			cursor: pointer;
+			transition: filter 160ms ease;
+		}
+
+		.ghost.text:hover {
+			filter: brightness(3.5) drop-shadow(0 0 10px rgba(255,255,255,0.75));
+			text-decoration: underline;
+			text-decoration-color: rgba(255,255,255,0.55);
 		}
 
 		.ghost.text.pinned {
@@ -220,6 +280,13 @@
 			letter-spacing: 0.14em;
 			pointer-events: auto;
 			cursor: pointer;
+			transition: filter 160ms ease;
+		}
+
+		.ghost.text:hover {
+			filter: brightness(3.5) drop-shadow(0 0 10px rgba(255,255,255,0.75));
+			text-decoration: underline;
+			text-decoration-color: rgba(255,255,255,0.55);
 		}
 
 		.ghost.text.pinned {
@@ -275,6 +342,20 @@
         "somewhere i want to be",
         "sweet thing"
 		];
+		// ─────────────────────────────────────────────────────────────────
+
+		// ─── Map each phrase to its visual vibe ──────────────────────
+		const vibeMap = {
+			"wacko":                    "wild",
+			"birdsandbees":             "medium",
+			"hey you":                  "medium",
+			"how is it possible":       "soft",
+			"silence":                  "soft",
+			"letter to myself":         "soft",
+			"so faithful and so sweet": "soft",
+			"somewhere i want to be":   "soft",
+			"sweet thing":              "soft",
+		};
 		// ─────────────────────────────────────────────────────────────────
 
 		// ─── Map each phrase to its audio file ────────────────────────
@@ -334,7 +415,9 @@
 			player.src = encoded;
 			player.play().catch(() => {});
 			loadRandomVideo();
-			document.body.classList.add("playing");
+			const vibe = vibeMap[phrase] || "wild";
+			document.body.classList.remove("vibe-wild", "vibe-medium", "vibe-soft");
+			document.body.classList.add("playing", "vibe-" + vibe);
 		}
 
 		function stopPlayback() {
@@ -342,7 +425,7 @@
 			player.src = "";
 			bgVideo.pause();
 			bgVideo.src = "";
-			document.body.classList.remove("playing");
+			document.body.classList.remove("playing", "vibe-wild", "vibe-medium", "vibe-soft");
 		}
 
 		stopBtn.addEventListener("click", stopPlayback);
@@ -370,8 +453,8 @@
 			slot.busy = true;
 
 			const isShape = Math.random() < 0.22;
-			const duration = rand(3200, 9000);
-			const peakOpacity = rand(0.04, 0.38).toFixed(3);
+			const duration = rand(6500, 16000);
+			const peakOpacity = rand(0.22, 0.72).toFixed(3);
 
 			const x = rand(5, 90);
 			const y = rand(5, 90);
