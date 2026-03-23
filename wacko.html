@@ -377,21 +377,37 @@
 		const stopBtn = document.getElementById("stopBtn");
 		const fullscreenBtn = document.getElementById("fullscreenBtn");
 
+		function fsRequest(el) {
+			if (el.requestFullscreen) return el.requestFullscreen();
+			if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return Promise.resolve(); }
+			return Promise.reject();
+		}
+		function fsExit() {
+			if (document.exitFullscreen) return document.exitFullscreen();
+			if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); return Promise.resolve(); }
+			return Promise.reject();
+		}
+		function fsElement() {
+			return document.fullscreenElement || document.webkitFullscreenElement || null;
+		}
+
 		fullscreenBtn.addEventListener("click", () => {
-			if (!document.fullscreenElement) {
-				document.documentElement.requestFullscreen().catch(() => {});
+			if (!fsElement()) {
+				fsRequest(document.documentElement).catch(() => {});
 			} else {
-				document.exitFullscreen().catch(() => {});
+				fsExit().catch(() => {});
 			}
 		});
 
-		document.addEventListener("fullscreenchange", () => {
-			if (document.fullscreenElement) {
+		function onFsChange() {
+			if (fsElement()) {
 				fullscreenBtn.classList.add("fullscreen-active");
 			} else {
 				fullscreenBtn.classList.remove("fullscreen-active");
 			}
-		});
+		}
+		document.addEventListener("fullscreenchange", onFsChange);
+		document.addEventListener("webkitfullscreenchange", onFsChange);
 
 		let videoList = [];
 		fetch("videos.json")

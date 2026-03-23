@@ -101,6 +101,9 @@
 		volumeSlider.addEventListener('input', (e) => {
 			audio.volume = e.target.value / 100;
 		});
+		volumeSlider.addEventListener('change', (e) => {
+			audio.volume = e.target.value / 100;
+		});
         
 		audio.addEventListener('ended', () => {
 			playBtn.classList.remove('playing');
@@ -141,37 +144,47 @@
 			location.reload();
 		});
 
+		// Fullscreen helpers with webkit fallbacks (Android Chrome, older Safari)
+		function fsRequest(el) {
+			if (el.requestFullscreen) return el.requestFullscreen();
+			if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); return Promise.resolve(); }
+			return Promise.reject();
+		}
+		function fsExit() {
+			if (document.exitFullscreen) return document.exitFullscreen();
+			if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); return Promise.resolve(); }
+			return Promise.reject();
+		}
+		function fsElement() {
+			return document.fullscreenElement || document.webkitFullscreenElement || null;
+		}
+
 		// Fullscreen button handler
 		const fullscreenBtn = document.getElementById('fullscreenBtn');
 		fullscreenBtn.addEventListener('click', () => {
-			if (!document.fullscreenElement) {
-				document.documentElement.requestFullscreen().catch(err => {
-					console.error('Fullscreen request failed:', err);
-				});
-				fullscreenBtn.classList.add('fullscreen-active');
+			if (!fsElement()) {
+				fsRequest(document.documentElement).catch(() => {});
 				sessionStorage.setItem('wasFullscreen', 'true');
 			} else {
-				document.exitFullscreen();
-				fullscreenBtn.classList.remove('fullscreen-active');
+				fsExit().catch(() => {});
 				sessionStorage.removeItem('wasFullscreen');
 			}
 		});
 
-		document.addEventListener('fullscreenchange', () => {
-			if (!document.fullscreenElement) {
+		function onFsChange() {
+			if (!fsElement()) {
 				fullscreenBtn.classList.remove('fullscreen-active');
 				sessionStorage.removeItem('wasFullscreen');
 			} else {
 				fullscreenBtn.classList.add('fullscreen-active');
 			}
-		});
+		}
+		document.addEventListener('fullscreenchange', onFsChange);
+		document.addEventListener('webkitfullscreenchange', onFsChange);
 
 		// Restore fullscreen if it was active before refresh
 		if (sessionStorage.getItem('wasFullscreen') === 'true') {
-			document.documentElement.requestFullscreen().catch(err => {
-				console.error('Failed to restore fullscreen:', err);
-				sessionStorage.removeItem('wasFullscreen');
-			});
+			fsRequest(document.documentElement).catch(() => { sessionStorage.removeItem('wasFullscreen'); });
 		}
 	</script>
 </body>
